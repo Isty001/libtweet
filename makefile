@@ -14,9 +14,13 @@ clean:
 	rm $(shell find $(BUILD_DIR) -name '*.o')
 
 test-unit:
-	make all && $(call compile,test/unit/*.c,-l cmocka -l tweet -o unit_test.o) && ./unit_test.o
+	make all
+	$(call compile,test/unit/*.c,-l cmocka -l tweet -o unit_test.o)
+	./unit_test.o
 
 run-dev:
 	make all
-	$(call compile,dev.c,$(DEPENDENCIES) -l tweet -o dev.o) && ./dev.o && rm dev.o
+	$(call compile,dev.c,$(DEPENDENCIES) -l tweet -o dev.o)
+	./dev.o
+	rm dev.o
 
