@@ -1,0 +1,13 @@
+sudo: required
+language: c
+compiler: gcc
+install:
+  - sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo apt-get update || true
+  - sudo apt-get install gcc-5 -y
+  - sudo apt-get install curl -y
+  - sudo apt-get install liboauth-dev -y
+  - sudo apt-get install libcmocka0 -y
+  - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 20
+script:
+  - sudo make test
