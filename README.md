@@ -1,1 +1,1 @@
-[![Build Status](https://drone.io/github.com/Isty001/libtweet/status.png)](https://drone.io/github.com/Isty001/libtweet/latest)
+[![Build Status](https://travis-ci.org/Isty001/libtweet.svg?branch=master)](https://travis-ci.org/Isty001/libtweet)
