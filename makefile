@@ -14,13 +14,18 @@ clean:
 	rm $(shell find $(BUILD_DIR) -name '*.o')
 
 test-unit:
-	make all
+	make all "CFLAGS=-D UNIT_TEST"
 	$(call compile,test/unit/*.c,-l cmocka -l tweet -o unit_test.o)
 	./unit_test.o
 
-run-dev:
+dev:
 	make all
 	$(call compile,dev.c,$(DEPENDENCIES) -l tweet -o dev.o)
+
+run-dev:
+	make dev
 	./dev.o
 	rm dev.o
 
+valgrind-test-unit:
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./unit_test.o

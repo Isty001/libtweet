@@ -1,15 +1,19 @@
-#ifndef LIBTWEET_LT_H
-#define LIBTWEET_LT_H
+#ifndef LIBTWEET_TWEET_H
+#define LIBTWEET_TWEET_H
 
 
-#include <stdlib.h>
+typedef struct lt_user lt_user;
+
+typedef struct lt_app lt_app;
 
 
 void lt_init(void);
 
-void lt_cleanup(void);
+lt_app *lt_app_create(char *token, char *secret);
 
 void lt_run(void);
+
+void lt_cleanup(void);
 
 
 #endif

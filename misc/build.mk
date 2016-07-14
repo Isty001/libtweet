@@ -2,7 +2,7 @@ ROOT_DIR=$(shell pwd)
 
 WARN=-Wextra -Wall -Wstrict-prototypes -Wunreachable-code
 DEPENDENCIES=-lcurl -loauth
-CFLAGS=$(WARN) $(DEPENDENCIES) -O2 -std=gnu11 -D _GNU_SOURCE -g
+override CFLAGS+=$(WARN) $(DEPENDENCIES) -O2 -std=gnu11 -D _GNU_SOURCE -g
 
 define compile =
 	gcc $(CFLAGS) $1 $2
@@ -14,10 +14,7 @@ LIB_FILE=libtweet.so
 
 define compile_lib =
 	cd $(BUILD_DIR) && \
-	for SOURCE in $(SOURCE_FILES) ; do \
-		$(call compile,$$SOURCE,-c -fpic) ; \
-	done
-
+    $(call compile,$(ROOT_DIR)/lib/*.c,-c -fpic)
 	gcc -shared -o $(BUILD_DIR)/$(LIB_FILE) $(BUILD_DIR)/*.o
 endef
 

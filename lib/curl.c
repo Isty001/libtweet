@@ -32,21 +32,16 @@ static CURL *create_curl_handle(char *url, curl_write_callback callback)
     return curl;
 }
 
-internal void curl_request(char *url, curl_write_callback callback)
+internal void curl_request_get(char *url, curl_write_callback callback, void *data)
 {
-    curl_multi_add_handle(curl_multi, create_curl_handle(url, callback));
-}
+    CURL *handle = create_curl_handle(url, callback);
 
-internal void curl_request_data(char *url, curl_write_callback callback, void *data)
-{
-    CURL *curl = create_curl_handle(url, callback);
-
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, data);
-    curl_multi_add_handle(curl_multi, curl);
+    curl_easy_setopt(handle, CURLOPT_WRITEDATA, data);
+    curl_multi_add_handle(curl_multi, handle);
 }
 
 //Todo: Check status/error
-internal void curl_request_perform(void)
+interface void lt_run(void)
 {
     curl_multi_perform(curl_multi, &req_num);
 }

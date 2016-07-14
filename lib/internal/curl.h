@@ -9,11 +9,7 @@ void curl_init(void);
 
 void curl_cleanup(void);
 
-void curl_request(char *url, curl_write_callback callback);
-
-void curl_request_data(char *url, curl_write_callback callback, void *data);
-
-void curl_request_perform(void);
+void curl_request_get(char *url, curl_write_callback callback, void *data);
 
 
 #endif

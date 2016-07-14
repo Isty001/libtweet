@@ -1,19 +1,20 @@
 #include <string.h>
 #include <stdio.h>
 #include "internal/utils.h"
-#include "../include/request.h"
+#include "internal/request.h"
+#include "internal/curl.h"
+#include "internal/auth.h"
 
 
-#define SIZE_OF_PARAM sizeof(param) + sizeof(key) + sizeof(value) + sizeof(param *)
+static const char *QUERY_STRING_FORMAT = "%s?%s=%s";
+static const char *POST_STRING_FORMAT = "%s%s=%s";
+static const char *PARAM_SEPARATOR = "&";
 
-#define QUERY_STRING_FORMAT "%s?%s=%s"
 
-#define POST_STRING_FORMAT "%s%s=%s"
-
-#define return_if_empty(request, _return) if (NULL == request->first_param) return _return;
+#define return_if_empty(request, _return) if (NULL == request->params->first) return _return;
 
 #define foreach(request)  \
-    param *param = request->first_param; \
+    param *param = request->params->first; \
         while (NULL != param) \
 
 #define set_next(p) param = p
@@ -21,6 +22,7 @@
 #define next(param) set_next(param->next)
 
 #define key_equals(param, key) 0 == strcmp(param->key, key)
+
 
 typedef struct param param;
 
@@ -32,26 +34,40 @@ struct param
     param *next;
 };
 
-struct lt_request
+struct request_params
 {
-    lt_app *app;
-    lt_user *user;
-    param *first_param;
-    param *last_param;
+    param *first;
+    param *last;
 };
 
-interface lt_request *lt_request_create_app(lt_app *app)
+static request_params *create_request_params(void)
 {
-    lt_request *request = alloc_type(lt_request);
-    request->first_param = NULL;
+    request_params *params = alloc_type(request_params);
+    params->first = NULL;
+    params->last = NULL;
+
+    return params;
+}
+
+static lt_request *create_request(char *endpoint, lt_app *app)
+{
+    lt_request *request = malloc_(sizeof(lt_request) + sizeof(endpoint));
     request->app = app;
+    request->endpoint = endpoint;
+    request->params = create_request_params();
+    request->callback = NULL;
 
     return request;
 }
 
-interface lt_request *lt_request_create_user(lt_app *app, lt_user *user)
+interface lt_request *lt_request_create_app(char *endpoint, lt_app *app)
 {
-    lt_request *request = lt_request_create_app(app);
+    return lt_request_create_user(endpoint, app, NULL);
+}
+
+interface lt_request *lt_request_create_user(char *endpoint, lt_app *app, lt_user *user)
+{
+    lt_request *request = create_request(endpoint, app);
     request->user = user;
 
     return request;
@@ -63,15 +79,16 @@ interface void lt_request_destroy(lt_request *request)
 
     foreach(request) {
         next = param->next;
-        _free(param);
+        free_(param);
         set_next(next);
     }
-    _free(request);
+    free_(request->params);
+    free_(request);
 }
 
 static param *create_param(char *key, char *value)
 {
-    param *new = alloc(SIZE_OF_PARAM);
+    param *new = malloc_(sizeof(param));
     new->key = key;
     new->value = value;
     new->next = NULL;
@@ -79,19 +96,19 @@ static param *create_param(char *key, char *value)
     return new;
 }
 
-interface void lt_request_set(lt_request *request, char *key, char *value)
+interface void lt_request_set_param(lt_request *request, char *key, char *value)
 {
     param *param = create_param(key, value);
 
-    if (NULL == request->first_param) {
-        request->first_param = param;
+    if (NULL == request->params->first) {
+        request->params->first = param;
     } else {
-        request->last_param->next = param;
+        request->params->last->next = param;
     }
-    request->last_param = param;
+    request->params->last = param;
 }
 
-interface char *lt_request_get(lt_request *request, char *key)
+interface char *lt_request_get_param(lt_request *request, char *key)
 {
     return_if_empty(request, NULL);
 
@@ -104,24 +121,24 @@ interface char *lt_request_get(lt_request *request, char *key)
     return NULL;
 }
 
-static void remove_param(lt_request *request, param *removed, param *prev)
+static void destroy_parameter(lt_request *request, param *removed, param *prev)
 {
-    if (removed == request->first_param) {
-        request->first_param = removed->next;
+    if (removed == request->params->first) {
+        request->params->first = removed->next;
     }
     prev->next = removed->next;
-    _free(removed);
+    free_(removed);
 }
 
-interface void lt_request_remove(lt_request *request, char *key)
+interface void lt_request_remove_param(lt_request *request, char *key)
 {
     return_if_empty(request,);
 
-    param *prev = request->first_param;
+    param *prev = request->params->first;
 
     foreach(request) {
         if (key_equals(param, key)) {
-            remove_param(request, param, prev);
+            destroy_parameter(request, param, prev);
 
             break;
         }
@@ -130,16 +147,38 @@ interface void lt_request_remove(lt_request *request, char *key)
     }
 }
 
-static char *create_request_string(lt_request *context, char *format)
+static char *create_parameter_string(lt_request *request, const char *format)
 {
+    char *string = "";
+
+    foreach(request) {
+        asprintf(&string, format, param->key, param->value);
+
+        if (param != request->params->last) {
+            asprintf(&string, "%s%s", string, PARAM_SEPARATOR);
+        }
+    }
+    return string;
 }
 
-internal char *to_query_string(lt_request *request)
+internal char *parameters_to_query_string(lt_request *request)
 {
-    return create_request_string(request, QUERY_STRING_FORMAT);
+    return create_parameter_string(request, QUERY_STRING_FORMAT);
 }
 
-internal char *to_post_string(lt_request *request)
+internal char *parameters_to_post_string(lt_request *request)
 {
-    return create_request_string(request, POST_STRING_FORMAT);
+    return create_parameter_string(request, POST_STRING_FORMAT);
+}
+
+static write_callback(lt_get_write_callback)
+{
+    lt_request *request = write_data;
+    request->callback(request, response);
+
+    return size;
+}
+
+interface void lt_get(lt_request *request)
+{
 }

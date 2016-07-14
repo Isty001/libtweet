@@ -11,4 +11,4 @@ install:
   - sudo apt-get install libcmocka0 -y
   - sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-5 20
 script:
-  - sudo make test
+  - sudo make test-unit

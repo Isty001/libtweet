@@ -1,20 +1,18 @@
-#ifndef LIBTWEET_AUTHENTICATION_H
-#define LIBTWEET_AUTHENTICATION_H
+#ifndef LIBTWEET_AUTH_H
+#define LIBTWEET_AUTH_H
 
 
-#include "user.h"
+#include "tweet.h"
 
-
-typedef struct lt_app lt_app;
 
 typedef int (*lt_pin_provider)(char *url);
 
-typedef void (*lt_auth_callback)(lt_user *user);
+typedef void (*lt_user_auth_callback)(lt_app *app, lt_user *user);
 
 
-lt_app *lt_app_create(char *token, char *secret);
+void lt_auth_pin(lt_app *app, lt_pin_provider pin_provider, lt_user_auth_callback user_callback);
 
-void lt_auth_pin(lt_app *app, lt_pin_provider pin_provider, lt_auth_callback user_callback);
+void lt_user_destroy(lt_user *user);
 
 
 #endif

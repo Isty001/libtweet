@@ -8,9 +8,8 @@ Twitter supports several ways of authentication through oAuth, check the [docume
 To complete the PIN based authentication you have to copy the PIN code from the provided URL.
 In a terminal application you could do something like this:
 
-```
+```C
 #include <tweet/auth.h>
-#include <tweet/tweet.h>
 #include <stdio.h>
 
 
@@ -26,7 +25,7 @@ int pin_provider(char *url)
 
 void auth_callback(lt_user *user)
 {
-    //Now you can use the API on the behalf of the authenticated user  
+    //Now you can use the API on the behalf of the authenticated user
     puts("Authenticated!");
 }
 
